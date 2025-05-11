@@ -8,7 +8,9 @@ export interface WebpayTransactionResponse {
     card_number: string;
   };
   accounting_date: string;
-  transaction_date: string; // Puede ser Date si quieres parsearlo
+  transaction_date: string; // o Date si lo conviertes con new Date()
+  authorization_code: string;
   payment_type_code: string;
+  response_code: number;
   installments_number: number;
 }

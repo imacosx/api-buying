@@ -14,7 +14,7 @@ export class Pago {
   @Column()
   payment_status: string;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column()
   payment_date: Date;
 
   @Column()
@@ -22,4 +22,19 @@ export class Pago {
 
   @Column()
   token_ws: string;
+
+  @Column()
+  number_card: string;
+
+  @Column()
+  reponse_code: number;
+
+  @Column()
+  installments_amount: number;
+
+  @Column()
+  installments_number: number;
+
+  @Column()
+  autorization_code: string;
 }

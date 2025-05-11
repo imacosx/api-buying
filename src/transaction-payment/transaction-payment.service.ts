@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import axios from 'axios';
 import { Pago } from 'src/entities/pagos.entity';
 import { Repository } from 'typeorm';
-/* import { WebpayTransactionResponse } from './interfaces/response-webpay-transaction.interface'; */
+import { WebpayTransactionResponse } from './interfaces/response-webpay-transaction.interface';
+import { createTransactionDto } from './dto/create-order.dto';
 
 @Injectable()
 export class TransactionPaymentService {
@@ -36,11 +37,11 @@ export class TransactionPaymentService {
     return lastOrderid;
   }
 
-  async createTrasaction() {
+  async createTrasaction(creatOrderDto: createTransactionDto) {
     const body = {
-      buy_order: 'ordenCompra12345678',
+      buy_order: creatOrderDto.buyOrder,
       session_id: 'sesion1234557545',
-      amount: 10000,
+      amount: creatOrderDto.amount,
       return_url:
         'http://localhost:3000/api/transaction-payment/proccess-payment',
     };
@@ -62,6 +63,13 @@ export class TransactionPaymentService {
       );
 
       if (response.status === 200) {
+        const paymentToUpdated = await this.paymentRepository.findOneBy({
+          order_id: creatOrderDto.buyOrder,
+        });
+
+        paymentToUpdated.token_ws = response.data.token;
+
+        await this.paymentRepository.save(paymentToUpdated);
         return response.data;
       } else {
         throw new Error(`Unexpected response status: ${response.status}`);
@@ -81,17 +89,81 @@ export class TransactionPaymentService {
     };
 
     try {
-      console.log('entraste');
       const paymentStatus = await axios.put(
         `${this.configService.get<string>('URL_TBK')}/rswebpaytransaction/api/webpay/v1.2/transactions/${tokenWs}`,
+        {},
         config,
       );
 
-      console.log(paymentStatus);
+      const dataPayment: WebpayTransactionResponse = paymentStatus.data;
+
+      if (dataPayment.status === 'AUTHORIZED') {
+        const updatedPayment = await this.updateRegisterPayment(
+          tokenWs,
+          parseInt(dataPayment.buy_order),
+          dataPayment,
+        );
+
+        if (!updatedPayment) {
+          throw new HttpException(
+            {
+              success: false,
+              message:
+                'No se pudo actualizar el pago, porfavor intente mas tarde',
+              code: 500,
+            },
+            500,
+          );
+        }
+
+        return {
+          success: true,
+          message: 'Pago actualizado correctamente',
+          code: 200,
+        };
+      } else {
+        console.log(
+          'deberia ir algo para que lo redireccione y envie un mensaje',
+        );
+      }
     } catch (error) {
       console.error('Error al realizar el PUT:', error);
     }
   }
 
-  async updateRegisterPayment() {}
+  async updateRegisterPayment(
+    token: string,
+    orderBuy: number,
+    transactionWebPay: WebpayTransactionResponse,
+  ): Promise<boolean> {
+    try {
+      const paymentToUpdated = await this.paymentRepository.findOneBy({
+        token_ws: token,
+        order_id: orderBuy,
+      });
+
+      if (!paymentToUpdated) {
+        throw new NotFoundException(`Payment with token ${token} not found`);
+      }
+
+      paymentToUpdated.payment_date = new Date();
+      paymentToUpdated.payment_method = transactionWebPay.payment_type_code;
+      paymentToUpdated.payment_status = transactionWebPay.status;
+      paymentToUpdated.number_card = transactionWebPay.card_detail.card_number;
+      paymentToUpdated.reponse_code = transactionWebPay.response_code;
+      (paymentToUpdated.autorization_code =
+        transactionWebPay.authorization_code),
+        (paymentToUpdated.installments_amount =
+          transactionWebPay.installments_number);
+      paymentToUpdated.installments_number =
+        transactionWebPay.installments_number;
+
+      await this.paymentRepository.save(paymentToUpdated);
+
+      return true;
+    } catch (error) {
+      console.log('having error ', error);
+      return false;
+    }
+  }
 }

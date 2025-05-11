@@ -1,13 +1,14 @@
-import { Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { TransactionPaymentService } from './transaction-payment.service';
+import { createTransactionDto } from './dto/create-order.dto';
 
 @Controller('transaction-payment')
 export class TransactionPaymentController {
   constructor(private transactionPaymentService: TransactionPaymentService) {}
 
   @Post('create-transaction')
-  async createTransaction() {
-    return await this.transactionPaymentService.createTrasaction();
+  async createTransaction(@Body() creatOrderDto: createTransactionDto) {
+    return await this.transactionPaymentService.createTrasaction(creatOrderDto);
   }
 
   @Get('create-orderBuy')
