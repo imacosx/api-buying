@@ -11,30 +11,30 @@ export class Pago {
   @Column('decimal')
   amount: number;
 
-  @Column()
+  @Column({ default: 'PENDING' })
   payment_status: string;
 
-  @Column()
+  @Column({ type: 'datetime', nullable: true })
   payment_date: Date;
 
-  @Column()
+  @Column({nullable: true })
   payment_method: string;
 
-  @Column()
+  @Column({nullable: true })
   token_ws: string;
 
-  @Column()
+  @Column({nullable: true })
   number_card: string;
 
-  @Column()
+  @Column({nullable: true })
   reponse_code: number;
 
-  @Column()
+  @Column({nullable: true })
   installments_amount: number;
 
-  @Column()
+  @Column({nullable: true })
   installments_number: number;
 
-  @Column()
+  @Column({nullable: true })
   autorization_code: string;
 }

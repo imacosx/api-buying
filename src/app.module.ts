@@ -20,7 +20,7 @@ import { Pago } from './entities/pagos.entity';
       password: process.env.DB_PASS, // Contraseña para MySQL
       database: process.env.DB_NAME, // Nombre de la base de datos
       entities: [Pago], // Aquí se agregarán las entidades de TypeORM
-      synchronize: false, // Esto hace que TypeORM sincronice las entidades con la base de datos automáticamente (usualmente no se recomienda en producción)
+      synchronize: true, // Esto hace que TypeORM sincronice las entidades con la base de datos automáticamente (usualmente no se recomienda en producción)
     }),
   ],
   controllers: [AppController],
