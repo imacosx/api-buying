@@ -20,4 +20,9 @@ export class TransactionPaymentController {
   async processPayment(@Query('token_ws') tokenWs: string) {
     return this.transactionPaymentService.processPayment(tokenWs);
   }
+
+  @Get('find-information-payment')
+  async findInformationPayment(@Query('orderBuy') orderBuy: number){
+    return this.transactionPaymentService.findInformationPayment(orderBuy);
+  }
 }

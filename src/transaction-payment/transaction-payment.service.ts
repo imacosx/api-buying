@@ -42,8 +42,7 @@ export class TransactionPaymentService {
       buy_order: creatOrderDto.buyOrder,
       session_id: 'sesion1234557545',
       amount: creatOrderDto.amount,
-      return_url:
-        'http://localhost:3000/api/transaction-payment/proccess-payment',
+      return_url: 'http://localhost:5173/procesamiento-pago',
     };
 
     const config = {
@@ -67,10 +66,16 @@ export class TransactionPaymentService {
           order_id: creatOrderDto.buyOrder,
         });
 
+        const details = response
+          ? `${response.data.url}?token_ws=${response.data.token}`
+          : null;
+
         paymentToUpdated.token_ws = response.data.token;
+        paymentToUpdated.transaction_details = details;
 
         await this.paymentRepository.save(paymentToUpdated);
-        return response.data;
+
+        return { status: 200, data: response.data };
       } else {
         throw new Error(`Unexpected response status: ${response.status}`);
       }
@@ -97,34 +102,40 @@ export class TransactionPaymentService {
 
       const dataPayment: WebpayTransactionResponse = paymentStatus.data;
 
-      if (dataPayment.status === 'AUTHORIZED') {
-        const updatedPayment = await this.updateRegisterPayment(
-          tokenWs,
-          parseInt(dataPayment.buy_order),
-          dataPayment,
+      const updatedPayment = await this.updateRegisterPayment(
+        tokenWs,
+        parseInt(dataPayment.buy_order),
+        dataPayment,
+      );
+
+      if (!updatedPayment) {
+        throw new HttpException(
+          {
+            success: false,
+            message:
+              'No se pudo actualizar el pago, porfavor intente mas tarde',
+            code: 500,
+          },
+          500,
         );
+      }
 
-        if (!updatedPayment) {
-          throw new HttpException(
-            {
-              success: false,
-              message:
-                'No se pudo actualizar el pago, porfavor intente mas tarde',
-              code: 500,
-            },
-            500,
-          );
-        }
-
+      if (dataPayment.status === 'AUTHORIZED') {
         return {
           success: true,
-          message: 'Pago actualizado correctamente',
+          message: 'Transacción aprobada',
+          data: dataPayment,
           code: 200,
         };
       } else {
-        console.log(
-          'deberia ir algo para que lo redireccione y envie un mensaje',
-        );
+        return {
+          success: false,
+          message: 'Transacción rechazada',
+          data: {
+            buyOrder: dataPayment.buy_order
+           },
+          code: 200,
+        };
       }
     } catch (error) {
       console.error('Error al realizar el PUT:', error);
@@ -165,5 +176,24 @@ export class TransactionPaymentService {
       console.log('having error ', error);
       return false;
     }
+  }
+
+  async findInformationPayment(orderBuy: number) {
+    try {
+      const paymentInformation = await this.paymentRepository.findOneBy({
+        order_id: orderBuy,
+      });
+
+      if (!paymentInformation) {
+        throw new NotFoundException(
+          `Payment with orderBuy ${orderBuy} not found`,
+        );
+      }
+
+      return {
+        status: 200,
+        data: paymentInformation,
+      };
+    } catch (error) {}
   }
 }

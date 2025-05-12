@@ -37,4 +37,17 @@ export class Pago {
 
   @Column({nullable: true })
   autorization_code: string;
+
+  @Column({nullable: true })
+  transaction_details: string;
+
+  @Column({nullable: true})
+  details_purchase: string;
+
+  @Column({nullable: true})
+  invoice_number: number;
+
+  @Column({nullable: true})
+  email: string;
+
 }
