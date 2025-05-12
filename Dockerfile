@@ -1,6 +1,7 @@
 FROM node:23
 WORKDIR /app
 COPY package*.json ./
+RUN npm install -g nodemon
 RUN npm install
 COPY . .
 RUN npm run build
